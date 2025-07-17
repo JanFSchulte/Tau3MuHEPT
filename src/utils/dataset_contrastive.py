@@ -53,16 +53,13 @@ class Tau3MuDataset(InMemoryDataset):
 
         print(f'[INFO] Debug mode: {self.debug}')
         
-        print(self.setting)
-        print(self.raw_file_names)
         super(Tau3MuDataset, self).__init__(root=self.data_dir)
         self.data, self.slices, self.idx_split = torch.load(self.processed_paths[endcap])
         self.x_dim = self.data.x.shape[-1]
-        print_splits(self)
     
     @property
     def raw_file_names(self):
-        return ['DsTau3muPU0_MTD.pkl', 'DSTau3Mu_pCut1GeV_DF.pkl', 'MinBiasPU200_MTD.pkl'] if 'mix' in self.setting else [signal_dataset, bkg_dataset]
+        return ['DSTau3Mu.pkl', 'minbias.pkl'] if 'mix' in self.setting else [signal_dataset, bkg_dataset]
 
     @property
     def processed_dir(self) -> str:
@@ -91,57 +88,21 @@ class Tau3MuDataset(InMemoryDataset):
         if self.debug:
             df = df.iloc[:100]
         
-        global eta
-        global phi
-        global r
-        global z
-        global theta
+        global eta1
+        global phi1
+        global eta2
+        global phi2
+        global tfLayer
         
-        if 'mu_hit_global_eta' in df.keys():
-            eta = 'mu_hit_global_eta'
-            phi = 'mu_hit_global_phi'
-            r = 'mu_hit_global_r'
-            z = 'mu_hit_global_z'
-            theta = 'mu_hit_global_theta'
-        else:
-            eta = 'mu_hit_sim_eta'
-            phi = 'mu_hit_sim_phi'
-            r = 'mu_hit_sim_r'
-            z = 'mu_hit_sim_z'
-            theta = 'mu_hit_sim_theta'
+        eta1 = 'stub_eta1'
+        phi1 = 'stub_phi1'
+        eta2 = 'stub_eta2'
+        phi2 = 'stub_phi2'
+        tfLayer = 'stub_tfLayer'
         
-        if 'EMTF' in self.node_feature_names:
-            assert 'full' in self.setting, 'half detector setting is currently not supported'
-            pt = 'EMTF_mu_pt'
-            eta = 'EMTF_mu_eta'
-            phi = 'EMTF_mu_phi'
-        
+       
         self.feature_names = self.node_feature_names
         
-        if 'mu_hit_sim_cosphi' in self.feature_names or 'mu_hit_sim_sinphi' in self.feature_names:
-            # Add phi transformations
-            r_copy = df[r].to_numpy()
-            phi_copy = df[phi].to_numpy()
-            cos = []
-            sin = []
-            x = []
-            y = []
-            
-            for i in range(len(r_copy)):
-                
-                hit_r = r_copy[i]
-                hit_phi = phi_copy[i]
-                
-                cos.append(np.cos(hit_phi))
-                sin.append(np.sin(hit_phi))
-                
-                x.append(hit_r*np.cos(hit_phi))
-                y.append(hit_r*np.sin(hit_phi))
-                
-            df['mu_hit_sim_cosphi'] = cos
-            df['mu_hit_sim_sinphi'] = sin
-            df['mu_hit_sim_x'] = x
-            df['mu_hit_sim_y'] = y
         
         # TODO: Figure out how to not require these to be global.
         
@@ -252,7 +213,6 @@ class Tau3MuDataset(InMemoryDataset):
             
             data, slices = self.collate(data_list)
             idx_split = Tau3MuDataset.get_idx_split(data_list, self.splits, self.pos_neg_ratio)
-            print(self.processed_paths)
             torch.save((data, slices, idx_split), self.processed_paths[0])
 
     def _process_one_entry(self, entry, endcap=0, only_eval=False):
@@ -282,8 +242,8 @@ class Tau3MuDataset(InMemoryDataset):
         x = Tau3MuDataset.get_node_features(entry, self.node_feature_names)
         coords = self.get_coors_for_hits(entry)
         
-        gen_mu = Tau3MuDataset.get_gen_mu_kinematics(entry)
-        gen_tau = Tau3MuDataset.get_gen_tau_kinematics(entry)
+        #gen_mu = Tau3MuDataset.get_gen_mu_kinematics(entry)
+        #gen_tau = Tau3MuDataset.get_gen_tau_kinematics(entry)
         y = torch.tensor(entry['y']).float().view(-1, 1)
         
         if 'mu_hit_truth' in entry.keys():
@@ -291,7 +251,7 @@ class Tau3MuDataset(InMemoryDataset):
             return Data(x=x, y=y, coords=coords, sample_idx=entry['og_index'], endcap=endcap, only_eval=only_eval, gen_mu=gen_mu, gen_tau=gen_tau, hit_truth=hit_truth)
 
         else:
-            return Data(x=x, y=y, coords=coords, sample_idx=entry['og_index'], endcap=endcap, only_eval=only_eval, gen_mu=gen_mu, gen_tau=gen_tau)
+            return Data(x=x, y=y, coords=coords, sample_idx=entry['og_index'], endcap=endcap, only_eval=only_eval)
 
         
 
@@ -317,44 +277,10 @@ class Tau3MuDataset(InMemoryDataset):
     
         
         dfs = Root2Df(self.data_dir / 'raw').read_df(self.setting)
-        neg200 = dfs[self.raw_file_names[1].replace('.pkl', '')]
-        pos200 = dfs[self.raw_file_names[0].replace('.pkl', '')]
-        pos0 = dfs.get('DsTau3muPU0_MTD', None)
-        
-        #assert self.only_one_tau # Only one-tau is supported
-        if self.only_one_tau:
-            pos200 = pos200[pos200.n_gen_tau == 1].reset_index(drop=True)
-            if pos0 is not None:
-                pos0 = pos0[pos0.n_gen_tau == 1].reset_index(drop=True)
-            
-            #try:
-            #    neg200 = neg200[neg200.n_gen_tau == 1].reset_index(drop=True)
-            #except:
-            #    pass
-            
-        if self.cut:
-            pos200 = pos200[pos200.apply(lambda x: self.filter_samples(x), axis=1)].reset_index(drop=True)
-            if pos0 is not None:
-                pos0 = pos0[pos0.apply(lambda x: self.filter_samples(x), axis=1)].reset_index(drop=True)
-
-        if pos0 is not None and len(pos0) > 100000:
-            print('[INFO] Sampling from pos0 to fasten processing & training...')
-            pos0 = pos0.sample(100000).reset_index(drop=True)
-
-        if 'mix' in self.setting:
-            pos, neg = self.mix(pos0, neg200, pos200, self.setting)
-        else:
-            pos, neg = pos200, neg200
-        
-        if 'half' in self.setting:
-            min_pos_neg_ratio = len(pos) / (len(neg) * 2)
-        else:
-            min_pos_neg_ratio = len(pos) / len(neg)
-        print(f'[INFO] min_pos_neg_ratio: {min_pos_neg_ratio}')
-
+        pos = dfs['DsTau3Mu']
+        neg = dfs['minbias']
         pos['y'], neg['y'] = 1, 0
-        print(pos)
-        print(neg)
+        
         #assert self.pos_neg_ratio >= min_pos_neg_ratio, f'min_pos_neg_ratio = {min_pos_neg_ratio}! Now pos_neg_ratio = {self.pos_neg_ratio}!'
         
         print(f'[INFO] Concatenating pos & neg, saving to {df_save_path}...')
@@ -445,8 +371,8 @@ class Tau3MuDataset(InMemoryDataset):
                 }
     
     def get_coors_for_hits(self, entry):
-            
-        coors = torch.tensor(np.stack([entry[feature] for feature in self.coords]).T)
+        stack = (np.stack([entry[feature] for feature in self.coords]))    
+        coors = torch.tensor(np.transpose(stack),dtype=torch.float32)
         return coors
         
     def get_hit_truth(self, entry):
@@ -537,10 +463,10 @@ class Tau3MuDataset(InMemoryDataset):
             return masked_entry
         
         mask = np.ones(n_mu_hit, dtype=bool)
-        for k, v in conditions.items():
-            k = k.split('-')[1]
-            assert isinstance(getattr(entry, k), np.ndarray)
-            mask *= eval('entry.' + k + v)
+        #for k, v in conditions.items():
+        #    k = k.split('-')[1]
+        #    assert isinstance(getattr(entry, k), np.ndarray)
+        #    mask *= eval('entry.' + k + v)
         
         
         n_mu_hit = mask.sum()

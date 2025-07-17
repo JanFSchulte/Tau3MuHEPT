@@ -26,7 +26,6 @@ class Tau3MuGNNs:
         self.writer = Writer(log_path)
         self.log_dir=self.writer.log_dir
         self.qat = config['model_kwargs']['qat']
-        self.baseline = config['model_kwargs']['baseline']
         self.lr_s = config['optimizer'].get('lr_s', False)
         self.grad_clip = config['optimizer'].get('grad_clip', False)
         
@@ -103,6 +102,8 @@ class Tau3MuGNNs:
         self.decoder.to(self.device)
         
         pos_batch, neg_batch = data
+
+
         del data
         pos_batch.to(self.device)
         neg_batch.to(self.device)
@@ -147,7 +148,6 @@ class Tau3MuGNNs:
         
         pos_loader, neg_loader = data_loader
         neg_loader = cycle(neg_loader)
-        
         loader_len = len(pos_loader)
         run_one_batch = self.train_one_batch if phase == 'train' else self.eval_one_batch
         phase = 'test ' if phase == 'test' else phase  # align tqdm desc bar
@@ -158,8 +158,6 @@ class Tau3MuGNNs:
         for idx, pos_batch in enumerate(pbar):
             neg_batch = next(neg_loader)
             
-            #print(pos_batch)
-            #print(neg_batch)
             loss_dict, clf_logits = run_one_batch((pos_batch,neg_batch))
             y = torch.cat([pos_batch.y.cpu(), neg_batch.y.cpu()])
             sample_idxs = torch.cat([pos_batch.sample_idx.cpu(), neg_batch.sample_idx.cpu()])

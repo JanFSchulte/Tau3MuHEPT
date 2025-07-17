@@ -51,6 +51,7 @@ def prepare_input(x, coords, batch, helper_params):
         for graph_idx in range(len(graph_size_cumsum)):
             start_idx = 0 if graph_idx == 0 else graph_size_cumsum[graph_idx - 1]
             end_idx = graph_size_cumsum[graph_idx]
+
             sorted_eta_idx = torch.argsort(coords[start_idx:end_idx, 0], dim=-1)
             sorted_phi_idx = torch.argsort(coords[start_idx:end_idx, 1], dim=-1)
 
