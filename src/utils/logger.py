@@ -36,9 +36,7 @@ def log_epoch(epoch, phase, loss_dict, clf_logits, clf_labels, batch, sample_idx
         if not batch and writer is not None:
             writer.add_scalar(f'{phase}/{k}', v, epoch)
         desc += f'{k}: {v:.3e}, '
-    if batch or reg:
-        return desc
-    
+   
     
     
     sample_dict = {}
@@ -68,6 +66,11 @@ def log_epoch(epoch, phase, loss_dict, clf_logits, clf_labels, batch, sample_idx
     R_LHC = 2760*11.246
     
     auroc = metrics.roc_auc_score(clf_labels, clf_probs)
+    desc += f'auroc: {auroc:.3f}'
+    if batch or reg:
+        return desc
+ 
+
     partial_auroc = metrics.roc_auc_score(clf_labels, clf_probs, max_fpr=0.001)
     fpr, recall, thres = metrics.roc_curve(clf_labels, clf_probs)
     indices = get_idx_for_interested_fpr(fpr, [10/R_LHC, 30/R_LHC, 77/R_LHC, 100/R_LHC])
@@ -93,7 +96,6 @@ def log_epoch(epoch, phase, loss_dict, clf_logits, clf_labels, batch, sample_idx
     fig = PlotCM(confusion_matrix=cm, display_labels=['Neg', 'Pos']).plot(cmap=plt.cm.Blues).figure_
     if writer is not None: writer.add_figure(f'Confusion Matrix - max_fpr_over_10/{phase}', fig, epoch)
     '''
-    desc += f'auroc: {auroc:.3f}'
 
     if exp_probs is not None and exp_labels is not None and -1 not in exp_labels and -1 not in exp_probs:
         exp_auroc = metrics.roc_auc_score(exp_labels, exp_probs)

@@ -5,7 +5,7 @@ num_threads: 32
 
 data: #Dataset-specific options. If these change, you must delete the previous processed files.
   data_dir: ../data
-  log_dir: ../data/logs # Be careful to change this
+  log_dir: ../data/logs_dummy # Be careful to change this
   signal_dataset: 'DsTau3Mu.pkl'
   bkg_dataset: 'minbias.pkl'
   add_self_loops: True
@@ -27,7 +27,7 @@ data: #Dataset-specific options. If these change, you must delete the previous p
   
   coords:
     - stub_eta1
-    - stub_phi2
+    - stub_phi1
 
 model_name: trans_hept
 model_kwargs:
@@ -59,7 +59,7 @@ optimizer: # Optimization options
   batch_size: 1024 # Number of samples to use in each batch
   epochs: 100 # Number of epochs to train for
   focal_loss: True # Loss function 
-  focal_alpha: 0.5 # Loss function parameter
+  focal_alpha: 0.2 # Loss function parameter
   focal_gamma: 0. # Loss function parameter
   total_alpha: 0.8
   temp: 1

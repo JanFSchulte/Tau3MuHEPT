@@ -45,6 +45,7 @@ def prepare_input(x, coords, batch, helper_params):
     with torch.no_grad():
         block_size, num_heads = helper_params["block_size"], helper_params["num_heads"]
         graph_sizes = batch.bincount()
+
         graph_size_cumsum = graph_sizes.cumsum(0)
 
         region_indices_eta, region_indices_phi = [], []

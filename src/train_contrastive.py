@@ -74,7 +74,7 @@ class Tau3MuGNNs:
             pos_batch, neg_batch = data
             pos_batch.to(self.device)
             neg_batch.to(self.device)
-            
+            print ('mask frac: ', self.mask_frac) 
             mask = torch.rand(pos_batch.x.size()[0])>self.mask_frac
             
             i = 0
@@ -159,6 +159,8 @@ class Tau3MuGNNs:
             neg_batch = next(neg_loader)
             
             loss_dict, clf_logits = run_one_batch((pos_batch,neg_batch))
+            print (pos_batch.y.cpu())
+            print (neg_batch.y.cpu())
             y = torch.cat([pos_batch.y.cpu(), neg_batch.y.cpu()])
             sample_idxs = torch.cat([pos_batch.sample_idx.cpu(), neg_batch.sample_idx.cpu()])
             
