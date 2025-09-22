@@ -1,15 +1,17 @@
 # Tau3MuHEPT
-This repo is to reproduce the results of Tau3MuHEPT project. Maintained by Benjamin Simon (Purdue).
+This repo is to reproduce the results of Tau3MuHEPT project. Originally by Benjamin Simon (Purdue) now maintained by Jan-Frederik Schulte
 
 
 ## 1. Clone the Repo 
 Then, clone the repo:
 ```
-git clone git@github.com:simon71701/Tau3MuHEPT.git
+git clone https://github.com/JanFSchulte/Tau3MuHEPT.git
 cd Tau3MuHEPT
+git fetch
+git switch hybrid_stubs
 ```
 
-## 2. install anaconda
+## Optional: 2. install anaconda
 Run:
 ```
 cd ../Tau3MuHEPT
@@ -29,11 +31,12 @@ conda activate tau3mu_hept
 ```
 
 ## 4. Get the data
-To run the code, you will need datasets in the form of `.pkl` files. Request those datasets and put them in `Tau3MuHEPT/data/raw/` and make sure their file names are appropriately listed in `processing.cfg`.
+To run the code, you will need datasets in the form of `.pkl` files. Get `DsTau3Mu.pkl` and `minbias.pkl` and put them in `Tau3MuHEPT/data/raw/` and make sure their file names are appropriately listed in `processing.cfg`.
+
+On the COS-6PRIME-2955 server, you can find them in `/home/jschulte/public`. On the hammer cluster or the AF, they can be found at `/depot/cms/users/schul105/Tau3Mu/datasets/hept`.
 
 When running the code, those dataframes will be processed according to the specific setting, and the processed files will be saved under `$ProjectDir/data/processed-[setting]-[cut_id]`. In this project, for simplicity we call them `SignalPU0, SignalPU200, BkgPU200` as `pos0, pos200, neg200` respectively.
 
-Please note that the processed files may take up lots of disk space (5 gigabytes+), and when processing them it may also take up lots of memory (10 gigabytes+).
 
 # Train a model
 
