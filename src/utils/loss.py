@@ -25,11 +25,41 @@ class Criterion(torch.nn.Module):
         fl = self.focal_loss(pred_scores, targets)
         
         total = self.alpha*(cl)+(1-self.alpha)*(fl)
-        
+
         loss_dict['focal'] = fl.cpu().item()
         loss_dict['contrastive'] = cl.cpu().item()
         loss_dict['total'] = total.cpu().item()
         return fl, total, loss_dict
+
+class Criterion2(torch.nn.Module):
+    
+    def __init__(self,optimizer_config):
+        super(Criterion, self).__init__()
+        self.alpha = optimizer_config['total_alpha']
+        self.focal_loss = FocalLoss(optimizer_config)
+        self.contrastive_loss = ContrastiveLoss(optimizer_config)
+    
+    def forward(self, embeds, logits):
+        
+        loss_dict = {}
+        cl = self.contrastive_loss(embeds)
+        
+        pos_logits, neg_logits = logits
+        pos_scores = F.sigmoid(pos_logits)
+        neg_scores = F.sigmoid(neg_logits)
+        
+        pred_scores = torch.cat([pos_scores, neg_scores]).view(-1)
+        targets = torch.cat([torch.ones(len(pos_logits)), torch.zeros(len(neg_logits))]).to(pred_scores.device)
+        
+        fl = self.focal_loss(pred_scores, targets)
+        
+        total = cl
+
+        loss_dict['focal'] = fl.cpu().item()
+        loss_dict['contrastive'] = cl.cpu().item()
+        loss_dict['total'] = total.cpu().item()
+        return fl, total, loss_dict
+
 
 class FocalLoss(torch.nn.Module):
 

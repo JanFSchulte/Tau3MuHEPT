@@ -80,6 +80,7 @@ class Tau3MuDataset(InMemoryDataset):
         raise KeyboardInterrupt
 
     def process(self):
+        print ("are we processing?????")
         df = self.get_df()
         
         df = df.sample(frac=1, random_state=42).reset_index(drop=False) # Shuffle the dataset. Set seed to make results reproducible
@@ -277,10 +278,11 @@ class Tau3MuDataset(InMemoryDataset):
     
         
         dfs = Root2Df(self.data_dir / 'raw').read_df(self.setting)
-        pos = dfs['DsTau3Mu']
+        #pos = dfs['DsTau3Mu']
+        pos = dfs['minbias'].copy()
         neg = dfs['minbias']
         pos['y'], neg['y'] = 1, 0
-        
+        print ("getting here?") 
         #assert self.pos_neg_ratio >= min_pos_neg_ratio, f'min_pos_neg_ratio = {min_pos_neg_ratio}! Now pos_neg_ratio = {self.pos_neg_ratio}!'
         
         print(f'[INFO] Concatenating pos & neg, saving to {df_save_path}...')
@@ -497,9 +499,12 @@ def get_data_loaders_contrastive(setting, data_config, batch_size, endcap=1):
     
     dataset = Tau3MuDataset(setting, data_config, idx)
     print('Retrieving Data Loaders from:'+dataset.processed_paths[idx])
+
     train_loader = [DataLoader(dataset[dataset.idx_split['pos_train']], batch_size=batch_size, shuffle=True,drop_last=True),DataLoader(dataset[dataset.idx_split['neg_train']], batch_size=batch_size, shuffle=True,drop_last=True)]
     valid_loader = [DataLoader(dataset[dataset.idx_split['pos_valid']], batch_size=batch_size, shuffle=True,drop_last=True),DataLoader(dataset[dataset.idx_split['neg_valid']], batch_size=batch_size, shuffle=True,drop_last=True)]
     test_loader = [DataLoader(dataset[dataset.idx_split['pos_test']], batch_size=batch_size, shuffle=True,drop_last=True),DataLoader(dataset[dataset.idx_split['neg_test']], batch_size=batch_size, shuffle=True,drop_last=True)]
+
+
     return {'train': train_loader, 'valid': valid_loader, 'test': test_loader}, dataset.x_dim, dataset
 
 
